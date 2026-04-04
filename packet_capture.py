@@ -1,19 +1,15 @@
-from scapy.all import sniff
+from scapy.all import sniff, get_if_list
 import threading
+from model import predict
 
-# ✅ GLOBAL VARIABLES (must exist)
 alerts = []
 stats = {"normal": 0, "attack": 0}
-
-# Dummy predict (for testing if model not loaded yet)
-def predict(features):
-    return "attack" if sum(features) % 2 == 0 else "normal"
 
 def extract_features(packet):
     try:
         return [
             len(packet),
-            packet.proto if hasattr(packet, 'proto') else 0,
+            1 if packet.haslayer('TCP') else 2 if packet.haslayer('UDP') else 3,
             1 if packet.haslayer('TCP') else 0,
             1 if packet.haslayer('UDP') else 0,
             1 if packet.haslayer('ICMP') else 0
@@ -29,13 +25,14 @@ def process_packet(packet):
         stats["normal"] += 1
     else:
         stats["attack"] += 1
-        alert_msg = f"🚨 {result} attack detected!"
-        alerts.append(alert_msg)
+        alerts.append(f"🚨 Attack detected!")
 
 def start_sniffing():
-    sniff(prn=process_packet, store=False)
+    interfaces = get_if_list()
+    print("Available Interfaces:", interfaces)
 
-# ✅ REQUIRED FUNCTION
+    sniff(prn=process_packet, store=False, iface=interfaces[0])  # 👈 important
+
 def run_sniffer():
     thread = threading.Thread(target=start_sniffing)
     thread.daemon = True
