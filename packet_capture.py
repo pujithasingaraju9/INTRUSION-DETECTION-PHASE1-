@@ -1,53 +1,49 @@
 import threading
 import random
 import time
-from model import predict
 
+# 🔥 GLOBAL DATA (shared with Streamlit)
 alerts = []
 stats = {"normal": 0, "attack": 0}
 
-# 🔥 Simulate realistic packet features
-def extract_features():
-    return [
-        random.randint(20, 1500),   # packet size
-        random.randint(1, 3),       # protocol
-        random.randint(0, 1),       # TCP
-        random.randint(0, 1),       # UDP
-        random.randint(0, 1)        # ICMP
-    ]
+attack_counts = {
+    "DoS": 0,
+    "Probe": 0,
+    "R2L": 0,
+    "U2R": 0
+}
 
-# 🔥 Simulate packet processing
-def process_packet():
-    features = extract_features()
-    result = predict(features)
+attack_types = ["DoS", "Probe", "R2L", "U2R"]
 
-    # fallback if model not trained
-    if result not in ["normal", "attack"]:
-        result = "attack" if random.random() < 0.3 else "normal"
+running = False  # control flag
 
-    if result == "normal":
-        stats["normal"] += 1
-    else:
-        stats["attack"] += 1
 
-        attack_types = [
-            "Brute Force",
-            "DDoS",
-            "Port Scan",
-            "SQL Injection",
-            "Botnet Traffic"
-        ]
+# 🔥 BACKGROUND TRAFFIC GENERATOR
+def generate_traffic():
+    global running
 
-        alerts.append(f"🚨 {random.choice(attack_types)} detected!")
+    while running:
+        time.sleep(2)  # ⏱️ update every 2 seconds
 
-# 🔁 Continuous simulation
-def start_simulation():
-    while True:
-        process_packet()
-        time.sleep(1)  # 1 packet per second
+        # 40% attack chance
+        if random.random() > 0.6:
+            attack = random.choice(attack_types)
 
-# ▶️ Start thread
+            stats["attack"] += 1
+            attack_counts[attack] += 1
+
+            alerts.append(f"🚨 {attack} attack detected!")
+
+        else:
+            stats["normal"] += 1
+
+
+# 🔥 START FUNCTION (RUNS ONCE)
 def run_sniffer():
-    thread = threading.Thread(target=start_simulation)
-    thread.daemon = True
-    thread.start()
+    global running
+
+    if not running:
+        running = True
+        thread = threading.Thread(target=generate_traffic)
+        thread.daemon = True
+        thread.start()
