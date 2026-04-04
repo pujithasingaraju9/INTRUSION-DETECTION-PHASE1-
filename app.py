@@ -46,10 +46,14 @@ with col1:
     st.markdown("### 🛡️ DARKSHIELD")
     st.caption("THREAT INTELLIGENCE v2.0")
 
+# ✅ FIXED LIVE TIME USING PLACEHOLDER
 with col3:
+    time_placeholder = st.empty()
+
     current_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-    st.markdown(
-        f"<p class='status-online'>● ACTIVE THREAT | ● AI ONLINE | {current_time}</p>",
+
+    time_placeholder.markdown(
+        f"<p class='status-online'>● ACTIVE THREAT | ● AI ONLINE | ⏰ {current_time}</p>",
         unsafe_allow_html=True
     )
 
@@ -72,7 +76,7 @@ if st.session_state.started:
     st.session_state.history["normal"].append(packet_capture.stats["normal"])
     st.session_state.history["time"].append(datetime.now().strftime("%H:%M:%S"))
 
-    # Limit to last 20 points
+    # Keep only last 20 points
     if len(st.session_state.history["attacks"]) > 20:
         st.session_state.history["attacks"].pop(0)
         st.session_state.history["normal"].pop(0)
