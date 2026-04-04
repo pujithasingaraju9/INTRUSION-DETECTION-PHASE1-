@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import random
-from streamlit_echarts import st_echarts
 import packet_capture
 from streamlit_autorefresh import st_autorefresh
 from datetime import datetime
@@ -12,7 +11,7 @@ st_autorefresh(interval=2000, key="refresh")
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="DARKSHIELD Threat Intel", layout="wide", initial_sidebar_state="collapsed")
 
-# --- CUSTOM CSS FOR DARK THEME ---
+# --- CUSTOM CSS ---
 st.markdown("""
 <style>
     .stApp {
@@ -25,11 +24,6 @@ st.markdown("""
         border-radius: 5px;
         padding: 15px;
         margin-bottom: 10px;
-    }
-    .metric-val {
-        font-size: 24px;
-        font-weight: bold;
-        color: #ff3366;
     }
     .metric-label {
         font-size: 12px;
@@ -44,7 +38,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER SECTION ---
+# --- HEADER ---
 col_h1, col_h2, col_h3 = st.columns([2, 5, 2])
 with col_h1:
     st.markdown("### 🛡️ DARKSHIELD")
@@ -59,17 +53,24 @@ with col_h3:
 
 st.divider()
 
-# Start Packet Sniffing
-if st.button("Start Network Monitoring"):
+# ✅ START BUTTON FIX
+if "started" not in st.session_state:
+    st.session_state.started = False
+
+if st.button("Start Network Monitoring") and not st.session_state.started:
     packet_capture.run_sniffer()
-    st.success("Network monitoring started!")
+    st.session_state.started = True
+    st.success("Monitoring Started!")
+
+if st.session_state.started:
+    st.info("🟢 Monitoring is running...")
 
 st.divider()
 
 # --- METRICS ---
 m1, m2, m3, m4 = st.columns(4)
 metrics = [
-    ("Active Threats", "633", "#ff3366"),
+    ("Active Threats", str(packet_capture.stats["attack"]), "#ff3366"),
     ("Brute Force", "515", "#f1c40f"),
     ("IPS Blocked", "12.4K", "#3498db"),
     ("Dark Mentions", "89", "#2ecc71")
@@ -89,7 +90,7 @@ for i, col in enumerate([m1, m2, m3, m4]):
 # --- MAIN DASHBOARD ---
 col_left, col_mid, col_right = st.columns([1.5, 3.5, 1.5])
 
-# LEFT COLUMN
+# LEFT
 with col_left:
     st.markdown("#### THREAT CATEGORIES")
     categories = {
@@ -104,22 +105,21 @@ with col_left:
         st.write(f"**{val}** {cat}")
         st.progress(val/250)
 
-# MIDDLE COLUMN
+# 🔥 MIDDLE (REPLACED GRAPH)
 with col_mid:
-    options = {
-        "backgroundColor": "#161b22",
-        "xAxis": {"show": False},
-        "yAxis": {"show": False},
-        "series": [{
-            "type": "graph",
-            "layout": "none",
-            "symbolSize": 10,
-            "data": [{"x": random.randint(0, 100), "y": random.randint(0, 100)} for _ in range(10)],
-            "links": [{"source": i, "target": i+1} for i in range(5)],
-            "lineStyle": {"color": "#ff3366", "width": 2, "curveness": 0.2}
-        }]
-    }
-    st_echarts(options=options, height="300px")
+    st.markdown("#### 📡 Live Attack Visualization")
+
+    # Simulated animated network-like pattern
+    x = list(range(10))
+    y1 = [random.randint(0, 100) for _ in range(10)]
+    y2 = [random.randint(0, 100) for _ in range(10)]
+
+    chart_data = pd.DataFrame({
+        "Normal Traffic": y1,
+        "Attack Traffic": y2
+    })
+
+    st.line_chart(chart_data)
 
     st.markdown("#### AI BRUTE FORCE CLASSIFIER")
     c1, c2, c3, c4 = st.columns(4)
@@ -128,7 +128,7 @@ with col_mid:
     c3.metric("IP Reputation", "4.1/10", "-0.2")
     c4.metric("Correlation", "87.3%", "Active")
 
-# RIGHT COLUMN
+# RIGHT
 with col_right:
     st.markdown("#### DARKWEB INTEL FEED")
     feeds = [
