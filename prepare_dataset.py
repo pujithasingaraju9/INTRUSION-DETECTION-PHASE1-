@@ -16,7 +16,7 @@ columns = [
 ]
 
 # 🔥 Load only small part (FAST)
-data = pd.read_csv("dataset/KDDTrain+", names=columns, nrows=5000)
+data = pd.read_csv("dataset/KDDTrain+.txt", names=columns, nrows=5000)
 
 # Select required features
 data = data[[
