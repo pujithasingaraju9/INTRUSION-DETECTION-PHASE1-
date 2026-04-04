@@ -2,11 +2,8 @@ import streamlit as st
 import pandas as pd
 import random
 import packet_capture
-from streamlit_autorefresh import st_autorefresh
 from datetime import datetime
-
-# 🔥 AUTO REFRESH EVERY 2 SECONDS
-st_autorefresh(interval=2000, key="refresh")
+import time
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="DARKSHIELD Threat Intel", layout="wide", initial_sidebar_state="collapsed")
@@ -40,6 +37,7 @@ st.markdown("""
 
 # --- HEADER ---
 col_h1, col_h2, col_h3 = st.columns([2, 5, 2])
+
 with col_h1:
     st.markdown("### 🛡️ DARKSHIELD")
     st.caption("THREAT INTELLIGENCE v2.0")
@@ -53,15 +51,17 @@ with col_h3:
 
 st.divider()
 
-# ✅ START BUTTON FIX
+# ✅ SESSION STATE
 if "started" not in st.session_state:
     st.session_state.started = False
 
+# ✅ START BUTTON
 if st.button("Start Network Monitoring") and not st.session_state.started:
     packet_capture.run_sniffer()
     st.session_state.started = True
     st.success("Monitoring Started!")
 
+# ✅ STATUS
 if st.session_state.started:
     st.info("🟢 Monitoring is running...")
 
@@ -69,6 +69,7 @@ st.divider()
 
 # --- METRICS ---
 m1, m2, m3, m4 = st.columns(4)
+
 metrics = [
     ("Active Threats", str(packet_capture.stats["attack"]), "#ff3366"),
     ("Brute Force", "515", "#f1c40f"),
@@ -90,7 +91,7 @@ for i, col in enumerate([m1, m2, m3, m4]):
 # --- MAIN DASHBOARD ---
 col_left, col_mid, col_right = st.columns([1.5, 3.5, 1.5])
 
-# LEFT
+# LEFT PANEL
 with col_left:
     st.markdown("#### THREAT CATEGORIES")
     categories = {
@@ -101,41 +102,40 @@ with col_left:
         "Data Exfil Attempt": 54,
         "DotWeb Scanner": 51
     }
+
     for cat, val in categories.items():
         st.write(f"**{val}** {cat}")
-        st.progress(val/250)
+        st.progress(val / 250)
 
-# 🔥 MIDDLE (REPLACED GRAPH)
+# MIDDLE PANEL (REPLACED GRAPH)
 with col_mid:
     st.markdown("#### 📡 Live Attack Visualization")
 
-    # Simulated animated network-like pattern
-    x = list(range(10))
-    y1 = [random.randint(0, 100) for _ in range(10)]
-    y2 = [random.randint(0, 100) for _ in range(10)]
-
     chart_data = pd.DataFrame({
-        "Normal Traffic": y1,
-        "Attack Traffic": y2
+        "Normal Traffic": [packet_capture.stats["normal"] + random.randint(0, 5) for _ in range(10)],
+        "Attack Traffic": [packet_capture.stats["attack"] + random.randint(0, 5) for _ in range(10)]
     })
 
     st.line_chart(chart_data)
 
     st.markdown("#### AI BRUTE FORCE CLASSIFIER")
+
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("LSTM Score", "96.6%", "High")
     c2.metric("Random Forest", "97.2%", "Stable")
     c3.metric("IP Reputation", "4.1/10", "-0.2")
     c4.metric("Correlation", "87.3%", "Active")
 
-# RIGHT
+# RIGHT PANEL
 with col_right:
     st.markdown("#### DARKWEB INTEL FEED")
+
     feeds = [
         ("NYXRA MAGNET DEC LEAKED", "Critical"),
         ("BREACH FORUM 0X2 INTEL", "High"),
         ("ORION PASTE D&C SCAN", "Med"),
     ]
+
     for title, sev in feeds:
         st.markdown(f"""
         <div style="font-size: 12px; margin-bottom: 10px; border-left: 3px solid #ff3366; padding-left: 5px;">
@@ -144,7 +144,7 @@ with col_right:
         </div>
         """, unsafe_allow_html=True)
 
-# --- LIVE STREAM ---
+# --- LIVE EVENT STREAM ---
 st.markdown("#### // LIVE EVENT STREAM")
 
 if packet_capture.alerts:
@@ -165,3 +165,8 @@ log_data = pd.DataFrame([
 ])
 
 st.table(log_data)
+
+# 🔥 AUTO REFRESH ONLY WHEN RUNNING
+if st.session_state.started:
+    time.sleep(2)
+    st.rerun()
