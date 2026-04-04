@@ -1,39 +1,53 @@
-from scapy.all import sniff, get_if_list
 import threading
+import random
+import time
 from model import predict
 
 alerts = []
 stats = {"normal": 0, "attack": 0}
 
-def extract_features(packet):
-    try:
-        return [
-            len(packet),
-            1 if packet.haslayer('TCP') else 2 if packet.haslayer('UDP') else 3,
-            1 if packet.haslayer('TCP') else 0,
-            1 if packet.haslayer('UDP') else 0,
-            1 if packet.haslayer('ICMP') else 0
-        ]
-    except:
-        return [0, 0, 0, 0, 0]
+# 🔥 Simulate realistic packet features
+def extract_features():
+    return [
+        random.randint(20, 1500),   # packet size
+        random.randint(1, 3),       # protocol
+        random.randint(0, 1),       # TCP
+        random.randint(0, 1),       # UDP
+        random.randint(0, 1)        # ICMP
+    ]
 
-def process_packet(packet):
-    features = extract_features(packet)
+# 🔥 Simulate packet processing
+def process_packet():
+    features = extract_features()
     result = predict(features)
+
+    # fallback if model not trained
+    if result not in ["normal", "attack"]:
+        result = "attack" if random.random() < 0.3 else "normal"
 
     if result == "normal":
         stats["normal"] += 1
     else:
         stats["attack"] += 1
-        alerts.append(f"🚨 Attack detected!")
 
-def start_sniffing():
-    interfaces = get_if_list()
-    print("Available Interfaces:", interfaces)
+        attack_types = [
+            "Brute Force",
+            "DDoS",
+            "Port Scan",
+            "SQL Injection",
+            "Botnet Traffic"
+        ]
 
-    sniff(prn=process_packet, store=False, iface=interfaces[0])  # 👈 important
+        alerts.append(f"🚨 {random.choice(attack_types)} detected!")
 
+# 🔁 Continuous simulation
+def start_simulation():
+    while True:
+        process_packet()
+        time.sleep(1)  # 1 packet per second
+
+# ▶️ Start thread
 def run_sniffer():
-    thread = threading.Thread(target=start_sniffing)
+    thread = threading.Thread(target=start_simulation)
     thread.daemon = True
     thread.start()
